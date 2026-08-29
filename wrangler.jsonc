@@ -1,0 +1,11 @@
+{
+  "name": "paste",
+  "main": "index.js",
+  "compatibility_date": "2024-01-01",
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "dev"
+    }
+  ]
+}
