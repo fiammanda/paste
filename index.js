@@ -13,44 +13,43 @@ export default {
         .map(({ name, expiration, metadata }) => `<li>
           <a href="/${name}">
             <time datetime="${metadata.update}"></time>
-            <span>${escape(metadata.title)}</span>
+            <span>${escape(metadata.title) || "untitled"}</span>
             <span data-expiration="${expiration || 0}"></span>
           </a>
         </li>`)
         .join("")
         + `<li> ${keys.length} in total</li></ul>`;
       const script = `
-        document.querySelectorAll("li a").forEach(el => {
-          el.firstElementChild.textContent = new Date(+el.firstElementChild.dateTime).toLocaleString("sv-se");
+      document.querySelectorAll("li a").forEach(el => {
+        el.firstElementChild.textContent = new Date(+el.firstElementChild.dateTime).toLocaleString("sv-se");
 
-          const span = el.lastElementChild;
-          const time = +span.dataset.expiration;
-          if (!time) {
-            span.className = "u0";
-            span.textContent = "永久保存";
-            return;
-          }
-          const diff = time - Math.floor(Date.now() / 1000);
-          if (diff < 3600) {
-            span.className = "u4";
-            span.textContent = Math.floor(diff / 60) + " 分钟后过期";
-          } else if (diff < 86400) {
-            span.className = "u3";
-            span.textContent = Math.floor(diff / 3600) + " 小时后过期";
-          } else if (diff < 2592000) {
-            span.className = "u2";
-            span.textContent = Math.floor(diff / 86400) + " 天后过期";
-          } else {
-            span.className = "u1";
-            span.textContent = new Date(time * 1000).toLocaleDateString("sv-se") + " 过期";
-          }
-        });
-      `;
+        const span = el.lastElementChild;
+        const time = +span.dataset.expiration;
+        if (!time) {
+          span.className = "u0";
+          span.textContent = "永久保存";
+          return;
+        }
+        const diff = time - Math.floor(Date.now() / 1000);
+        if (diff < 3600) {
+          span.className = "u4";
+          span.textContent = Math.floor(diff / 60) + " 分钟后过期";
+        } else if (diff < 86400) {
+          span.className = "u3";
+          span.textContent = Math.floor(diff / 3600) + " 小时后过期";
+        } else if (diff < 2592000) {
+          span.className = "u2";
+          span.textContent = Math.floor(diff / 86400) + " 天后过期";
+        } else {
+          span.className = "u1";
+          span.textContent = new Date(time * 1000).toLocaleDateString("sv-se") + " 过期";
+        }
+      });
+    `;
 
       return new Response(renderHTML(head, link, main, script), {
         headers: {
-          "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "public, max-age=60, s-maxage=60"
+          "Content-Type": "text/html; charset=utf-8"
         }
       });
     }
@@ -92,10 +91,13 @@ export default {
               <textarea name="content" required>${escape(info.value)}</textarea>
             </label>
             <div>
-              <button type="button" class="button" name="replace">replace</button>
+              <button type="button" class="button" name="replace">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m.08 4h.01" /></svg>
+                <span>replace</span>
+              </button>
               <button type="button" class="button" name="copy">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" /></svg>
-                copy
+                <span>copy</span>
               </button>
             </div>
           </div>
@@ -105,7 +107,7 @@ export default {
           <button type="submit" class="button" formnovalidate>delete</button>
         </footer>
       </form>`;
-      const script = `${renderScript.toString().slice(25, -1)}`;
+      const script = `${renderScript.toString().slice(25, -1)}`.replace(/\n  /g, "\n      ") + "    ";
 
       return new Response(renderHTML(head, link, main, script), {
         headers: {
@@ -128,7 +130,7 @@ export default {
       }
     }
 
-    return new Response("Not Found", {status: 404});
+    return new Response("Not Found", { status: 404 });
   }
 };
 
@@ -262,7 +264,11 @@ function renderHTML (head, link, main, script) {
           span:last-of-type {
             margin: 0 0 0 auto;
             font-size: .75rem;
-            color: hsl(240 8 80);
+            &.u0 { color: hsl(240 8 80); }
+            &.u1 { color: hsl(60 80 75); }
+            &.u2 { color: hsl(50 80 70); }
+            &.u3 { color: hsl(40 80 65); }
+            &.u4 { color: hsl(30 80 60); }
           }
         }
       }
@@ -280,9 +286,6 @@ function renderHTML (head, link, main, script) {
         &::before {
           content: "$";
           color: hsl(80 80 60);
-        }
-        span:first-child {
-          margin: 0 .5em;
         }
         span:last-child {
           color: hsl(240 8 60);
@@ -331,13 +334,21 @@ function renderHTML (head, link, main, script) {
         grid-template-rows: max-content 1fr;
         gap: 1rem;
         height: 100%;
+        label span {
+          color: hsl(240 8 60);
+          &::before {
+            content: ">";
+            margin: 0 .5em 0 0;
+            color: hsl(80 80 60);
+          }
+        }
       }
       footer {
         padding: .5em 0;
         text-align: center;
         user-select: none;
         button {
-          margin: 0 .5em;
+          margin: 0 .25em;
           form:has(textarea:invalid) &:first-child,
           form:has([name="key"][value=""]) &:last-child {
             color: hsl(240 8 60);
@@ -352,14 +363,6 @@ function renderHTML (head, link, main, script) {
         transition: border .2s ease-in-out;
         &:focus-within {
           border-color: hsl(240 8 80);
-        }
-        span {
-          color: hsl(240 8 60);
-          &::before {
-            content: ">";
-            margin: 0 .5em 0 0;
-            color: hsl(80 80 60);
-          }
         }
         input, textarea {
           padding: 0 0 0 1em;
@@ -396,16 +399,15 @@ function renderHTML (head, link, main, script) {
         button {
           display: inline-grid;
           place-items: center;
-          margin: 0 0 0 .5em;
           svg {
             position: absolute;
             stroke: transparent;
             transition: stroke .2s ease-in-out;
           }
-          &:disabled  {
+          &:disabled, &[value="confirm"] {
             color: transparent;
           }
-          &:disabled svg {
+          &:disabled svg, &[value="confirm"] svg {
             stroke: #fff;
           }
         }
@@ -505,7 +507,7 @@ function renderHTML (head, link, main, script) {
     </main>
     <script>${script}</script>
   </body>
-</html>`.replace(/\n(\s)*/g, "");
+</html>`;
 }
 
 function renderScript() {
@@ -523,16 +525,23 @@ function renderScript() {
       setTimeout(() => {
         form.copy.disabled = false;
       }, 2000);
-    } catch (e) {
-      console.error(e);
+    } catch (err) {
+      console.error(err);
     }
   });
 
   form.replace.addEventListener("click", async e => {
-    try {
-      form.content.value = await navigator.clipboard.readText();
-    } catch (e) {
-      console.error(e);
+    if (form.replace.value) {
+      try {
+        form.content.select();
+        document.execCommand("insertText", false, await navigator.clipboard.readText());
+        //form.content.value = await navigator.clipboard.readText();
+      } catch (err) {
+        console.error(err);
+      }
+    } else {
+      form.replace.value = "confirm";
+      setTimeout(() => form.replace.value = "", 2000);
     }
   });
 
@@ -563,6 +572,7 @@ function renderScript() {
         if (!form.key.value) {
           form.key.value = body.key;
           span.dataset.key = body.key;
+          history.pushState(null, "", "/" + body.key);
         }
         span.dataset.update = new Date(time).toLocaleString("sv-se");
         form.dataset.notice = `${action}成功`;
