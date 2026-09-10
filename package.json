@@ -1,0 +1,11 @@
+{
+  "name": "paste",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler pages dev assets --ip 0.0.0.0 --port 1602"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.34.3"
+  }
+}
